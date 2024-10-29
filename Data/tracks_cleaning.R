@@ -16,4 +16,8 @@ x <- tracks$artists
 x <- sapply(x, function(s) strsplit(s, "\'")[[1]][2])
 tracks$artists <- x
 
+x <- tracks$release_date
+x <- sapply(x, function(s) strsplit(s, "-")[[1]][1])
+tracks$release_date <- x
+
 save(tracks, file = "clean_tracks.Rdata")
