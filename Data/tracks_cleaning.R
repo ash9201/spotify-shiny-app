@@ -20,4 +20,7 @@ x <- tracks$release_date
 x <- sapply(x, function(s) strsplit(s, "-")[[1]][1])
 tracks$release_date <- x
 
+tracks <- tracks %>% rename("year" = release_date)
+tracks$year <- as.numeric(tracks$year)
+
 save(tracks, file = "clean_tracks.Rdata")
