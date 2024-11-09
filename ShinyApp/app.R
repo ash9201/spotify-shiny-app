@@ -1,5 +1,5 @@
 library(dplyr)
-load("clean_tracks.Rdata")
+load("../Data/clean_tracks.Rdata")
 tracks <- tracks[-(1:11), ]
 tracks <- tracks %>% group_by(year) %>% summarise("Danceability" = mean(danceability), "Energy" = mean(energy), 
                                                    "Valence" = mean(valence),
