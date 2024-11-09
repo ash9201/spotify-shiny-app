@@ -6,7 +6,10 @@ tracks <- tracks %>% group_by(year) %>% summarise("Danceability" = mean(danceabi
                                                   "Speechiness" = mean(speechiness), 
                                                   "Acousticness" = mean(acousticness),
                                                   "Instrumentalness" = mean(instrumentalness),
-                                                  "Popularity" = mean(popularity)/100)
+                                                  "Popularity" = mean(popularity)/100,
+                                                  "Duration" = mean(duration_ms)/1000,
+                                                  "Tempo" = mean(tempo))
+
 
 library(shiny)
 
@@ -19,7 +22,7 @@ ui <- fluidPage(
       sidebarPanel(
         checkboxGroupInput("features", 
                            "Select Music Features:", 
-                           choices = colnames(tracks[-1]),
+                           choices = colnames(tracks[-c(1, 9, 10)]),
                            selected = c("Danceability", "Popularity")),
         
         sliderInput("years", 
@@ -31,7 +34,9 @@ ui <- fluidPage(
       ),
       
       mainPanel(
-        plotOutput("featurePlot")
+        plotOutput("featurePlot"),
+        plotOutput("durationPlot"),
+        plotOutput("tempoPlot")
       )
     )
 )
@@ -50,8 +55,7 @@ server <- function(input, output) {
     library(ggplot2)
     
     p <- ggplot(filtered_data, aes(x = year)) +
-      labs(x = "Year", y = "Feature Value") +
-      theme_minimal()
+      labs(x = "Year", y = "Audio Features")
     
     # Add a line for each selected feature
     if ("Danceability" %in% input$features) {
@@ -84,7 +88,29 @@ server <- function(input, output) {
     
     print(p)
   })
+  
+  output$durationPlot <- renderPlot({
+    
+    filtered_data <- tracks[tracks$year >= input$years[1] & tracks$year <= input$years[2], ]
+    
+    ggplot(filtered_data, aes(x = year)) +
+      labs(x = "Year", y = "Duration") +
+      geom_line(aes(y = Duration, color = "Duration"))
+  })
+  
+  output$tempoPlot <- renderPlot({
+    
+    filtered_data <- tracks[tracks$year >= input$years[1] & tracks$year <= input$years[2], ]
+    
+    ggplot(filtered_data, aes(x = year)) +
+      labs(x = "Year", y = "Tempo") +
+      geom_line(aes(y = Tempo, color = "Tempo"))
+  })
 }
+
+
+# Run the application 
+shinyApp(ui = ui, server = server)
 
 
 # Run the application 
