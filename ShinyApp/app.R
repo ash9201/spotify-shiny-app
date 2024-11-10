@@ -78,10 +78,10 @@ ui <- fluidPage(
                  textInput("artist2", "Enter Second Artist Name", value = "Badshah"),
                  actionButton("goButton", "Compare Artists"),
                  selectInput("feature", "Show comparison for:",
-                             choices = c("danceability", 
-                                         "energy", 
-                                         "valence", 
-                                         "acousticness"))
+                             choices = c("Danceability" = "danceability", 
+                                        "Energy" = "energy", 
+                                        "Valence" = "valence", 
+                                        "Acousticness" = "acousticness"))
                ),
                mainPanel(
                  h4("Genres of Selected Artists"),
