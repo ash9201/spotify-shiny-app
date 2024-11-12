@@ -1,5 +1,7 @@
 # Load required libraries
 library(shiny)
+install.packages("shinythemes")
+library(shinythemes)
 install.packages("spotifyr")
 library(spotifyr)
 library(ggplot2)
@@ -30,7 +32,6 @@ get_track_features <- function(track_ids) {
 
 # Load data for the second app (Music Features Over Time)
 load("../Data/clean_tracks.Rdata")
-
 tracks <- tracks[-(1:11), ] #Data not accurately available for all the earlier years before 1947
 tracks <- tracks %>%
   group_by(year) %>%
@@ -48,15 +49,16 @@ tracks <- tracks %>%
 
 # Define the UI with tabs
 ui <- fluidPage(
+  theme = shinytheme("cyborg"),
   titlePanel("Spotify Analysis Dashboard"),
   
   tabsetPanel(
     # First tab for artist comparison app
-    tabPanel("Artist Details",
+    tabPanel("Artist's Top Tracks",
              sidebarLayout(
                sidebarPanel(
-                 textInput("artist_name", "Enter Artist Name:", value = "Arijit Singh"),
-                 actionButton("search", "Get Artist Info"),
+                 textInput("artist_name", "Enter Artist's Name:", value = ""),
+                 actionButton("search", "Get Top Tracks"),
                  selectInput("feature", "Select Audio Feature to Plot:",
                              choices = c("Danceability", "Energy", "Tempo", "Valence",
                                          "Speechiness", "Acousticness", "Instrumentalness")),
@@ -74,17 +76,16 @@ ui <- fluidPage(
     tabPanel("Artist Comparison",
              sidebarLayout(
                sidebarPanel(
-                 textInput("artist1", "Enter First Artist Name", value = "Honey Singh"),
-                 textInput("artist2", "Enter Second Artist Name", value = "Badshah"),
-                 actionButton("goButton", "Compare Artists"),
+                 textInput("artist1", "Enter First Artist's Name", value = ""),
+                 textInput("artist2", "Enter Second Artist's Name", value = ""),
                  selectInput("feature", "Show comparison for:",
                              choices = c("Danceability" = "danceability", 
                                         "Energy" = "energy", 
                                         "Valence" = "valence", 
-                                        "Acousticness" = "acousticness"))
+                                        "Acousticness" = "acousticness")),
+                 actionButton("goButton", "Compare Artists")
                ),
                mainPanel(
-                 h4("Genres of Selected Artists"),
                  textOutput("artist1_genre"),
                  textOutput("artist2_genre"),
                  plotOutput("featureBoxPlot")
@@ -100,7 +101,7 @@ ui <- fluidPage(
                                     choices = colnames(tracks[-c(1, 9, 10)]),
                                     selected = c("Danceability", "Popularity")),
                  sliderInput("years", "Select Year Range:", min = 1947, max = 2021, 
-                             value = c(1990, 2017), sep = "")
+                             value = c(1982, 2017), sep = "")
                ),
                mainPanel(
                  plotOutput("featurePlot"),
@@ -182,11 +183,26 @@ server <- function(input, output) {
     # Select the feature for plotting
     feature_data <- audio_features_df[[tolower(input$feature)]]
     
-    # Create a bar plot with ggplot2
-    ggplot(data.frame(Track = track_names, Feature = feature_data), aes(x = Track, y = Feature)) +
-      geom_bar(stat = "identity", fill = "skyblue") +
-      labs(title = paste(input$feature, "of Top Tracks"), x = "Track", y = input$feature) +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    ggplot(data.frame(Track = track_names, Feature = feature_data), aes(x = Track, y = Feature, group = 1)) +
+      geom_line(color = "#00D4FF", size = 1.2) +  # Bright blue line to stand out against dark background
+      geom_point(color = "#FFFFFF", size = 3, shape = 21, fill = "#1C1C1C", stroke = 1) +  # White outline, dark fill points
+      labs(
+        title = paste(tools::toTitleCase(input$feature), "of Top Tracks"), 
+        x = "Track", 
+        y = tools::toTitleCase(input$feature)
+      ) +
+      theme_minimal(base_family = "Arial") +  # Minimal theme for clean look
+      theme(
+        plot.background = element_rect(fill = "#1E1E1E", color = NA),  # Dark background for plot
+        panel.background = element_rect(fill = "#1E1E1E", color = NA),  # Dark panel background
+        panel.grid.major = element_line(color = "#3A3A3A"),  # Subtle grid lines
+        panel.grid.minor = element_line(color = "#3A3A3A", linetype = "dotted"),
+        axis.text.x = element_text(angle = 45, hjust = 1, color = "#FFFFFF"),  # White x-axis labels
+        axis.text.y = element_text(color = "#FFFFFF"),  # White y-axis labels
+        axis.title.x = element_text(color = "#FFFFFF"),  # White x-axis title
+        axis.title.y = element_text(color = "#FFFFFF"),  # White y-axis title
+        plot.title = element_text(color = "#00D4FF", size = 16, face = "bold", hjust = 0.5)  # Bright title, centered
+      )
   })
   
   # Second app: artist comparison
@@ -214,10 +230,26 @@ server <- function(input, output) {
     output$featureBoxPlot <- renderPlot({
       # Dynamically select the chosen feature from input$feature
       ggplot(combined_data, aes(x = artist, y = .data[[input$feature]], fill = artist)) +
-        geom_boxplot() +
-        labs(title = paste(toTitleCase(input$feature), "comparison"),
-             x = "Artist",
-             y = toTitleCase(input$feature))
+        geom_boxplot(color = "#FFFFFF", size = 0.8, outlier.color = "#FF5733", outlier.size = 3) +  # Slightly larger outliers
+        scale_fill_manual(values = c("#00D4FF", "#FF5733", "#00FF85", "#FFC300")) +  # Custom colors for artist fill
+        labs(
+          title = paste(tools::toTitleCase(input$feature), "Comparison"),
+          x = "Artist",
+          y = tools::toTitleCase(input$feature)
+        ) +
+        theme_minimal(base_family = "Arial") +
+        theme(
+          plot.background = element_rect(fill = "#1E1E1E", color = NA),  # Dark plot background
+          panel.background = element_rect(fill = "#1E1E1E", color = NA),  # Dark panel background
+          panel.grid.major = element_line(color = "#3A3A3A"),  # Subtle grid lines
+          panel.grid.minor = element_line(color = "#3A3A3A", linetype = "dotted"),
+          axis.text.x = element_text(color = "#FFFFFF", size = 14),  # Larger x-axis labels
+          axis.text.y = element_text(color = "#FFFFFF", size = 14),  # Larger y-axis labels
+          axis.title.x = element_text(color = "#FFFFFF", size = 16),  # Larger x-axis title
+          axis.title.y = element_text(color = "#FFFFFF", size = 16),  # Larger y-axis title
+          plot.title = element_text(color = "#00D4FF", size = 18, face = "bold", hjust = 0.5),  # Larger, centered title
+          legend.position = "none"  # Hides legend to keep it clean
+        )
     })
     
   })
@@ -228,33 +260,91 @@ server <- function(input, output) {
     
     if (length(input$features) == 0) return(NULL)
     
-    p <- ggplot(filtered_data, aes(x = year)) + labs(x = "Year", y = "Audio Features")
+    p <- ggplot(filtered_data, aes(x = year)) +
+      labs(
+        x = "Year",
+        y = "Audio Features",
+        title = "Audio Features Over Time"
+      ) +
+      theme_minimal(base_family = "Arial") +
+      theme(
+        plot.background = element_rect(fill = "#1E1E1E", color = NA),  # Dark plot background
+        panel.background = element_rect(fill = "#1E1E1E", color = NA),  # Dark panel background
+        panel.grid.major = element_line(color = "#3A3A3A"),  # Subtle grid lines
+        panel.grid.minor = element_line(color = "#3A3A3A", linetype = "dotted"),
+        axis.text.x = element_text(color = "#FFFFFF", size = 14),  # Larger x-axis labels
+        axis.text.y = element_text(color = "#FFFFFF", size = 14),  # Larger y-axis labels
+        axis.title.x = element_text(color = "#FFFFFF", size = 16),  # Larger x-axis title
+        axis.title.y = element_text(color = "#FFFFFF", size = 16),  # Larger y-axis title
+        plot.title = element_text(color = "#00D4FF", size = 18, face = "bold", hjust = 0.5),  # Larger, centered title
+        legend.background = element_rect(fill = "#1E1E1E", color = NA),  # Dark legend background
+        legend.text = element_text(color = "#FFFFFF", size = 12),  # White legend text
+        legend.title = element_blank()  # No legend title
+      )
     
+    # Adding each feature line with custom colors
     for (feature in input$features) {
-      p <- p + geom_line(aes_string(y = feature, color = paste0("'", feature, "'")))
+      p <- p + geom_line(aes_string(y = feature, color = paste0("'", feature, "'")), size = 1.2)
     }
     
+    # Print the plot
     print(p)
   })
   
   output$durationPlot <- renderPlot({
     filtered_data <- tracks[tracks$year >= input$years[1] & tracks$year <= input$years[2], ]
     ggplot(filtered_data, aes(x = year)) +
-      geom_line(aes(y = Duration, color = "Duration")) +
-      labs(x = "Year", y = "Duration")
+      geom_line(aes(y = Duration, color = "Duration"), size = 1.2) +  # Bold line for Duration
+      scale_color_manual(values = c("Duration" = "#00D4FF")) +  # Bright color for the line
+      labs(
+        x = "Year",
+        y = "Duration",
+        title = "Duration Over Time"
+      ) +
+      theme_minimal(base_family = "Arial") +
+      theme(
+        plot.background = element_rect(fill = "#1E1E1E", color = NA),  # Dark plot background
+        panel.background = element_rect(fill = "#1E1E1E", color = NA),  # Dark panel background
+        panel.grid.major = element_line(color = "#3A3A3A"),  # Subtle grid lines
+        panel.grid.minor = element_line(color = "#3A3A3A", linetype = "dotted"),
+        axis.text.x = element_text(color = "#FFFFFF", size = 14),  # Larger x-axis labels
+        axis.text.y = element_text(color = "#FFFFFF", size = 14),  # Larger y-axis labels
+        axis.title.x = element_text(color = "#FFFFFF", size = 16),  # Larger x-axis title
+        axis.title.y = element_text(color = "#FFFFFF", size = 16),  # Larger y-axis title
+        plot.title = element_text(color = "#00D4FF", size = 18, face = "bold", hjust = 0.5),  # Larger, centered title
+        legend.background = element_rect(fill = "#1E1E1E", color = NA),  # Dark legend background
+        legend.text = element_text(color = "#FFFFFF", size = 12),  # White legend text
+        legend.title = element_blank()  # No legend title
+      )
   })
   
   output$tempoPlot <- renderPlot({
     filtered_data <- tracks[tracks$year >= input$years[1] & tracks$year <= input$years[2], ]
     ggplot(filtered_data, aes(x = year)) +
-      geom_line(aes(y = Tempo, color = "Tempo")) +
-      labs(x = "Year", y = "Tempo")
+      geom_line(aes(y = Tempo, color = "Tempo"), size = 1.2) +  # Bold line for Duration
+      scale_color_manual(values = c("Tempo" = "#00D4FF")) +  # Bright color for the line
+      labs(
+        x = "Year",
+        y = "Tempo",
+        title = "Tempo Over Time"
+      ) +
+      theme_minimal(base_family = "Arial") +
+      theme(
+        plot.background = element_rect(fill = "#1E1E1E", color = NA),  # Dark plot background
+        panel.background = element_rect(fill = "#1E1E1E", color = NA),  # Dark panel background
+        panel.grid.major = element_line(color = "#3A3A3A"),  # Subtle grid lines
+        panel.grid.minor = element_line(color = "#3A3A3A", linetype = "dotted"),
+        axis.text.x = element_text(color = "#FFFFFF", size = 14),  # Larger x-axis labels
+        axis.text.y = element_text(color = "#FFFFFF", size = 14),  # Larger y-axis labels
+        axis.title.x = element_text(color = "#FFFFFF", size = 16),  # Larger x-axis title
+        axis.title.y = element_text(color = "#FFFFFF", size = 16),  # Larger y-axis title
+        plot.title = element_text(color = "#00D4FF", size = 18, face = "bold", hjust = 0.5),  # Larger, centered title
+        legend.background = element_rect(fill = "#1E1E1E", color = NA),  # Dark legend background
+        legend.text = element_text(color = "#FFFFFF", size = 12),  # White legend text
+        legend.title = element_blank()  # No legend title
+      )
   })
 }
-
-# Run the application 
-shinyApp(ui = ui, server = server)
-
 
 # Run the application 
 shinyApp(ui = ui, server = server)
