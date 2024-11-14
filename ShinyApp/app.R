@@ -139,7 +139,7 @@ server <- function(input, output) {
   
   output$feature_plot <- renderPlot({
     req(input$artist_name)
-    req(input$feature)  # Make sure a feature is selected
+    req(input$feature)  
     
     # Retrieve the preloaded audio features and track names for the selected artist
     top_tracks_data <- result[[input$artist_name]]$top_tracks_data
@@ -149,14 +149,13 @@ server <- function(input, output) {
     feature_data <- audio_features_df[[tolower(input$feature)]]
     
     ggplot(data.frame(Track = top_tracks_data$Track, Feature = feature_data), aes(x = Track, y = Feature, group = 1)) +
-      geom_line(color = "#00D4FF", size = 1.2) +  # Bright blue line to stand out against dark background
-      geom_point(color = "#FFFFFF", size = 3, shape = 21, fill = "#1C1C1C", stroke = 1) +  # White outline, dark fill points
-      labs(
+      geom_line(color = "#00D4FF", size = 1.2) + 
+      geom_point(color = "#FFFFFF", size = 3, shape = 21, fill = "#1C1C1C", stroke = 1) +  
         title = paste(tools::toTitleCase(input$feature), "of Top Tracks"), 
         x = "Track", 
         y = tools::toTitleCase(input$feature)
       ) +
-      theme_minimal(base_family = "Arial") +  # Minimal theme for clean look
+      theme_minimal(base_family = "Arial") +  
       theme(
         plot.background = element_rect(fill = "#1E1E1E", color = NA),  # Dark background for plot
         panel.background = element_rect(fill = "#1E1E1E", color = NA),  # Dark panel background
@@ -196,7 +195,7 @@ server <- function(input, output) {
     output$featureBoxPlot <- renderPlot({
       # Dynamically select the chosen feature from input$feature
       ggplot(combined_data, aes(x = artist, y = .data[[input$feature]], fill = artist)) +
-        geom_boxplot(color = "#FFFFFF", size = 0.8, outlier.color = "#FF5733", outlier.size = 3) +  # Slightly larger outliers
+        geom_boxplot(color = "#FFFFFF", size = 0.8, outlier.color = "#FF5733", outlier.size = 3) + 
         scale_fill_manual(values = c("#00D4FF", "#FF5733", "#00FF85", "#FFC300")) +  # Custom colors for artist fill
         labs(
           title = paste(tools::toTitleCase(input$feature), "Comparison"),
@@ -214,7 +213,7 @@ server <- function(input, output) {
           axis.title.x = element_text(color = "#FFFFFF", size = 16),  # Larger x-axis title
           axis.title.y = element_text(color = "#FFFFFF", size = 16),  # Larger y-axis title
           plot.title = element_text(color = "#00D4FF", size = 18, face = "bold", hjust = 0.5),  # Larger, centered title
-          legend.position = "none"  # Hides legend to keep it clean
+          legend.position = "none" 
         )
     })
     
