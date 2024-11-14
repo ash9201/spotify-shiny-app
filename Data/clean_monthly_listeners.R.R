@@ -13,7 +13,7 @@ remDr$navigate("https://chartmasters.org/most-monthly-listeners-on-spotify/")
 # Initialize an empty data.table to store all scraped data
 all_data <- data.table()
 
-# Initialize condition and page count for the loop
+
 cond <- TRUE
 page_count <- 1  # To track the number of pages
 
@@ -32,13 +32,13 @@ while (cond == TRUE) {
   Sys.sleep(0.1)
   # Remove the 26th row if it exists
   if (nrow(df) >= 26) {
-    df <- df[-26, ]  # Delete the 26th row
+    df <- df[-26, ]  
   }
   
   # Append the new data to all_data
   all_data <- rbindlist(list(all_data, df), use.names = TRUE, fill = TRUE)
   
-  # Print a message to track progress (optional)
+  # Print a message to track progress 
   print(paste("Scraping page", page_count))
   
   # Stop scraping after 40 pages
@@ -48,7 +48,7 @@ while (cond == TRUE) {
     break
   }
   
-  # Wait for some time before navigating to the next page (to avoid overwhelming the server)
+  
   Sys.sleep(0.5)
   
   # Try to click the next button and handle errors
@@ -80,7 +80,7 @@ while (cond == TRUE) {
       page_count <- page_count + 1
       
       # Wait for the page to load (replace static sleep with waiting for a specific change)
-      Sys.sleep(3)  # Adjust this value based on your page load speed
+      Sys.sleep(3)  
     },
     error = function(e) {
       print("Reached the last page or encountered an error. Script Completed.")
