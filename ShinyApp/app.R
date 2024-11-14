@@ -33,20 +33,6 @@ get_track_features <- function(track_ids) {
 # Load data for the second app (Music Features Over Time)
 load("../Data/clean_tracks.Rdata")
 load("../Data/spotify_data.Rdata")
-tracks <- tracks[-(1:11), ] #Data not accurately available for all the earlier years before 1947
-tracks <- tracks %>%
-  group_by(year) %>%
-  summarise(
-    Danceability = mean(danceability),
-    Energy = mean(energy),
-    Valence = mean(valence),
-    Speechiness = mean(speechiness),
-    Acousticness = mean(acousticness),
-    Instrumentalness = mean(instrumentalness),
-    Popularity = mean(popularity) / 100,
-    Duration = mean(duration_ms) / 1000,
-    Tempo = mean(tempo)
-  )
 
 # Define the UI with tabs
 ui <- fluidPage(
