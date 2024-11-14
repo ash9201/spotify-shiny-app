@@ -1,16 +1,16 @@
 # Load required libraries
 library(shiny)
-install.packages("shinythemes")
+#install.packages("shinythemes")
 library(shinythemes)
-install.packages("spotifyr")
+#install.packages("spotifyr")
 library(spotifyr)
 library(ggplot2)
 library(dplyr)
 library(tools)
 
 # Set up Spotify API credentials
-Sys.setenv(SPOTIFY_CLIENT_ID = '4e04cd9971e843539a71ea0839b8bb5c')
-Sys.setenv(SPOTIFY_CLIENT_SECRET = 'ddd2e2f022544363a1d0c1f578677b5b')
+Sys.setenv(SPOTIFY_CLIENT_ID = '5d41e80c50bd4a9b930636a7ccc0cde3')
+Sys.setenv(SPOTIFY_CLIENT_SECRET = '713f28cf65ac4974bf1325eba164a833')
 access_token <- get_spotify_access_token()
 
 # Function to get artist's top tracks and genre
@@ -32,6 +32,7 @@ get_track_features <- function(track_ids) {
 
 # Load data for the second app (Music Features Over Time)
 load("../Data/clean_tracks.Rdata")
+load("../Data/spotify_data.Rdata")
 tracks <- tracks[-(1:11), ] #Data not accurately available for all the earlier years before 1947
 tracks <- tracks %>%
   group_by(year) %>%
@@ -57,11 +58,11 @@ ui <- fluidPage(
     tabPanel("Artist's Top Tracks",
              sidebarLayout(
                sidebarPanel(
-                 textInput("artist_name", "Enter Artist's Name:", value = ""),
-                 actionButton("search", "Get Top Tracks"),
+                 selectInput("artist_name", "Enter Artist's Name:", 
+                             choices = cml$Artist),
                  selectInput("feature", "Select Audio Feature to Plot:",
                              choices = c("Danceability", "Energy", "Tempo", "Valence",
-                                         "Speechiness", "Acousticness", "Instrumentalness")),
+                                         "Speechiness", "Acousticness", "Instrumentalness"))
                ),
                mainPanel(
                  uiOutput("artist_image"),
@@ -117,73 +118,51 @@ ui <- fluidPage(
 server <- function(input, output) {
   
   # First app: artist info and top tracks
-  artist_id <- eventReactive(input$search, {
+  selected_artist_data <- reactive({
     req(input$artist_name)
-    artist_search <- search_spotify(input$artist_name, type = 'artist')
-    artist_search$id[1]
+    cml %>% filter(Artist == input$artist_name)
+  })
+  
+  # Retrieve the artist ID from the selected artist data
+  artist_id <- reactive({
+    selected_artist_data()$artist_id
   })
   
   # Display artist image
   output$artist_image <- renderUI({
-    req(artist_id())
-    artist_img_url <- get_artist(artist_id())$images[[1]][1]
+    req(input$artist_name)
+    artist_img_url <- selected_artist_data()$artist_img
     tags$img(src = artist_img_url, height = "300px")
   })
   
+  
   output$related_artists <- renderText({
-    req(artist_id())
-    x <- get_related_artists(artist_id())
-    related <- head(x$name, 3)
-    paste("Similar Artists are", paste(related[1:2], collapse = ", "), "and", related[3])
+    req(selected_artist_data())
+    similar_artists <- selected_artist_data()$similar  # assuming `similar_artists` column contains the preformatted text
+    paste(similar_artists)
   })
   
   output$top_tracks <- renderTable({
-    req(artist_id())
-    top_tracks <- get_artist_top_tracks(artist_id())
+    req(input$artist_name)
     
-    # Retrieve track names and IDs
-    track_names <- top_tracks$name
-    track_ids <- top_tracks$id
+    top_tracks_data <- result[[input$artist_name]]$top_tracks_data
     
-    tracks_details <- get_tracks(track_ids)
-    dates <- as.Date(tracks_details$album.release_date)
-    artist_names <- character(length = nrow(tracks_details))
-    
-    for(i in 1:nrow(tracks_details)) {
-      artist_names[i] <- paste(tracks_details[[1]][[i]]$name, collapse = ", ")
-    }
-    # Get audio features for each track
-    audio_features <- lapply(track_ids, get_track_audio_features)
-    audio_features_df <- bind_rows(audio_features)
-    
-    # Combine track names with audio features
-    top_tracks_data <- data.frame(
-      track_names,
-      artist_names,
-      Duration = sprintf("%d:%02d", ((audio_features_df$duration_ms) %/% 1e3) %/% 60,
-                         ((audio_features_df$duration_ms) %/% 1e3) %% 60),
-      format(as.Date(dates, format = "%Y-%m-%d"), "%d/%m/%Y"),
-      top_tracks$popularity
-    )
-    names(top_tracks_data) <- c("Track", "Artists", "Duration", "Release Date", "Popularity")
     top_tracks_data
   })
   
+  
   output$feature_plot <- renderPlot({
-    req(artist_id())
+    req(input$artist_name)
     req(input$feature)  # Make sure a feature is selected
     
-    # Retrieve top tracks and audio features
-    top_tracks <- get_artist_top_tracks(artist_id())
-    track_names <- top_tracks$name
-    track_ids <- top_tracks$id
-    audio_features <- lapply(track_ids, get_track_audio_features)
-    audio_features_df <- bind_rows(audio_features)
+    # Retrieve the preloaded audio features and track names for the selected artist
+    top_tracks_data <- result[[input$artist_name]]$top_tracks_data
+    audio_features_df <- result[[input$artist_name]]$audio_features_df
     
-    # Select the feature for plotting
+    # Select the feature data for plotting
     feature_data <- audio_features_df[[tolower(input$feature)]]
     
-    ggplot(data.frame(Track = track_names, Feature = feature_data), aes(x = Track, y = Feature, group = 1)) +
+    ggplot(data.frame(Track = top_tracks_data$Track, Feature = feature_data), aes(x = Track, y = Feature, group = 1)) +
       geom_line(color = "#00D4FF", size = 1.2) +  # Bright blue line to stand out against dark background
       geom_point(color = "#FFFFFF", size = 3, shape = 21, fill = "#1C1C1C", stroke = 1) +  # White outline, dark fill points
       labs(
@@ -205,6 +184,7 @@ server <- function(input, output) {
       )
   })
   
+  
   # Second app: artist comparison
   observeEvent(input$goButton, {
     artist1_data <- get_artist_info(input$artist1)
@@ -213,8 +193,8 @@ server <- function(input, output) {
     artist1_tracks <- artist1_data$tracks
     artist2_tracks <- artist2_data$tracks
     
-    output$artist1_genre <- renderText({paste("Genres of", input$artist1, ":", artist1_data$genre) })
-    output$artist2_genre <- renderText({paste("Genres of", input$artist2, ":", artist2_data$genre) })
+    output$artist1_genre <- renderText({paste("Genre(s) of", input$artist1, ":", artist1_data$genre) })
+    output$artist2_genre <- renderText({paste("Genre(s) of", input$artist2, ":", artist2_data$genre) })
     
     artist1_ids <- artist1_tracks$id
     artist2_ids <- artist2_tracks$id
