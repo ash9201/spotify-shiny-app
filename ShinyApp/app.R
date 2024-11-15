@@ -1,8 +1,6 @@
 # Load required libraries
 library(shiny)
-#install.packages("shinythemes")
 library(shinythemes)
-#install.packages("spotifyr")
 library(spotifyr)
 library(ggplot2)
 library(dplyr)
