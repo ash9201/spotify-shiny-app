@@ -1,7 +1,7 @@
 library(spotifyr)
 library(dplyr)
 
-cml <- read.csv("cleaned_monthly_listeners.csv")
+cml <- read.csv("../monthly_listeners/cleaned_monthly_listeners.csv")
 cml <- head(cml, 100)
 # Set up Spotify API credentials
 Sys.setenv(SPOTIFY_CLIENT_ID = '5d41e80c50bd4a9b930636a7ccc0cde3')
