@@ -2,8 +2,7 @@
 library(shiny)
 library(shinythemes)
 library(spotifyr)
-library(ggplot2)
-library(dplyr)
+library(tidyverse)
 library(tools)
 
 # Set up Spotify API credentials
@@ -149,8 +148,9 @@ server <- function(input, output) {
     ggplot(data.frame(Track = top_tracks_data$Track, Feature = feature_data), aes(x = Track, y = Feature, group = 1)) +
       geom_line(color = "#00D4FF", size = 1.2) + 
       geom_point(color = "#FFFFFF", size = 3, shape = 21, fill = "#1C1C1C", stroke = 1) +  
-        title = paste(tools::toTitleCase(input$feature), "of Top Tracks"), 
-        x = "Track", 
+      labs(
+        title = paste(tools::toTitleCase(input$feature), "of Top Tracks"),
+        x = "Track",
         y = tools::toTitleCase(input$feature)
       ) +
       theme_minimal(base_family = "Arial") +  
@@ -261,7 +261,7 @@ server <- function(input, output) {
       scale_color_manual(values = c("Duration" = "#00D4FF")) +  # Bright color for the line
       labs(
         x = "Year",
-        y = "Duration",
+        y = "Duration (in secs)",
         title = "Duration Over Time"
       ) +
       theme_minimal(base_family = "Arial") +
