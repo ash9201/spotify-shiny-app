@@ -29,8 +29,8 @@ get_track_features <- function(track_ids) {
 }
 
 # Load data for the second app (Music Features Over Time)
-load("../Data/clean_tracks.Rdata")
-load("../Data/spotify_data.Rdata")
+load("../Data/Tracks/clean_tracks.Rdata")
+load("../Data/spotify_data/spotify_data.Rdata")
 
 # Define the UI with tabs
 ui <- fluidPage(
