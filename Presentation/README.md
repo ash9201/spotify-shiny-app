@@ -1,3 +1,3 @@
 # Presentation
 
-Presentation files here
+Extract the zip file to get the presentation.
