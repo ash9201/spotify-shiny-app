@@ -1,0 +1,235 @@
+---
+title: "\\Huge \\underline{Exploring Spotify and Music Trends}"
+format: pdf
+editor: visual
+---
+
+# [Overview]{.underline}
+
+This report explores the **top artists on Spotify and how they compare** using the **Spotify API**,and **Music Trends** over time, which describes how things like *audio features, duration* or *tempo* have changed over various decades.
+
+# [Datasets and Obtaining Data]{.underline}
+
+-   We scraped monthly listeners' data from a table in *ChartMasters* website.
+
+    -   It contains a table of 1000 top artists and their monthly listeners ranked from most listeners to least.
+
+-   We used the *spotifyr* package from CRAN to access the **Spotify API**.
+
+    -   We took the names of top 100 artists obtained from the monthly listeners' data from the ChartMasters website and then using the functions available in the *spotifyr* package, we scraped all of their image urls, similar artists, detailed info about their top tracks and info about the audio features of their top tracks.
+
+    -   For a part of the app we also directly used the API accessing utility of the *spotifyr* package to compare audio features of the top tracks of two different artists at once.
+
+-   We obtained the dataset of over 600k+ tracks available on Spotify from Kaggle as a *.csv* file
+
+    -   We cleaned all columns appropriately
+
+    -   We removed the first 11 rows of the data as the it had data missing for a few years between 1921 to 1946.
+
+    -   We grouped the rows by year and took the mean of all audio features for the songs released in that year to obtain year-wise data for music features.
+
+## [Data components]{.underline}
+
+-   **Danceability**: Reflects how suitable a track is for dancing based on tempo, rhythm stability, and beat strength.
+-   **Valence**: Represents the emotional tone, with higher values feeling more positive or happy.
+-   **Energy**: Measures intensity and activity; energetic tracks feel fast, loud, and dynamic.
+-   **Tempo**: The speed of the song, measured in beats per minute (BPM).
+-   **Instrumentalness**: Indicates the likelihood of the track being instrumental; higher values mean fewer or no vocals.
+-   **Acousticness**: Assesses the probability of a track being acoustic, with higher values indicating a more natural sound.
+-   **Speechiness**: Captures the presence of spoken words; higher values suggest more spoken content (e.g., a podcast).
+-   **Popularity**: Reflects how well-liked the track is, based on plays and recent listeners (0–100 scale).
+-   **Monthly listeners**: Number of unique listeners who listen to the artist at least once in a span of 28 days.
+
+# [Biases in the Data]{.underline}
+
+-   When looking at an artist's style of music based on their top tracks and the audio features of those top tracks, it may not accurately represent the kind of music that the artist regularly creates, it just shows the selected few tracks which are really popular among the listeners.
+
+-   When analyzing how audio features, duration or tempo of songs have evolved year-wise, every year does not contain the same number of songs; some years which contain very few number of songs, the mean of audio features for that year may not represent the actual music trend in that year due to very small sample size.
+
+# [Interesting Questions to ask from the data]{.underline}
+
+-   What are the most popular tracks that the top artists from across the world have made? What are their audio features which make them so popular among listeners?
+
+-   How do two different artists compare in terms of audio features of their top tracks? For example, for two artists of the same genre, one of them might make happier songs, or faster or more energetic songs.
+
+-   How have audio features of songs on an average evolved over various years and decades?
+
+-   Are songs getting shorter over time?
+
+# [Visualizations]{.underline}
+
+We can see the most popular tracks of an artist, any collaborating artists who worked on that track, the duration of the track, release dates of the tracks, and *popularity*, which is a spotify metric on a 0-100 scale.
+
+```{r, warning = FALSE, results = 'asis'}
+#| echo: false
+load("../Data/spotify_data.Rdata")
+cat("\\begin{table}[H]")
+cat("\\tiny")  # Adjust font size to small
+result[["Arijit Singh"]]$top_tracks_data %>%
+  kable("latex", booktabs = TRUE)
+cat("\\end{table}")
+```
+
+We can also get to know about what the audio features for each of these tracks. Here, we can see that *Heeriye* and *O Maahi* are more suitable for dancing than tracks like *Satranga*. We can observe that Arijit Singh makes diverse songs in terms of danceability.
+
+```{r, warning = FALSE, out.width='75%', fig.align='center'}
+#| echo: false
+library(ggplot2)
+load("../Data/spotify_data.Rdata")
+
+top_tracks_data <- result[["Arijit Singh"]]$top_tracks_data
+audio_features_df <- result[["Arijit Singh"]]$audio_features_df
+
+feature_data <- audio_features_df[["danceability"]]
+
+ggplot(data.frame(Track = top_tracks_data$Track, Feature = feature_data), aes(x = Track, y = Feature, group = 1)) +
+      geom_line(color = "#00D4FF", linewidth = 1.2) +  # Bright blue line to stand out against dark background
+      geom_point(color = "#FFFFFF", size = 3, shape = 21, fill = "#1C1C1C", stroke = 1) +  # White outline, dark fill points
+      labs(
+        title = paste(tools::toTitleCase("danceability"), "of Top Tracks"), 
+        x = "Track", 
+        y = tools::toTitleCase("danceability")
+      ) +
+      theme_minimal(base_family = "sans") +  # Minimal theme for clean look
+      theme(
+        plot.background = element_rect(fill = "#1E1E1E", color = NA),  # Dark background for plot
+        panel.background = element_rect(fill = "#1E1E1E", color = NA),  # Dark panel background
+        panel.grid.major = element_line(color = "#3A3A3A"),  # Subtle grid lines
+        panel.grid.minor = element_line(color = "#3A3A3A", linetype = "dotted"),
+        axis.text.x = element_text(angle = 45, hjust = 1, color = "#FFFFFF"),  # White x-axis labels
+        axis.text.y = element_text(color = "#FFFFFF"),  # White y-axis labels
+        axis.title.x = element_text(color = "#FFFFFF"),  # White x-axis title
+        axis.title.y = element_text(color = "#FFFFFF"),  # White y-axis title
+        plot.title = element_text(color = "#00D4FF", size = 16, face = "bold", hjust = 0.5)  # Bright title, centered
+      )
+```
+
+\newpage
+
+We can compare different artists on the basis of audio features of their top 10 tracks. Here on seeing this visualization we can observe that Sabrina Carpenter makes more cheerful tracks (with higher valence) than Taylor Swift.
+
+```{r, warning = FALSE, out.width='75%', fig.align='center'}
+#| echo: false
+load("../Data/spotify_data.Rdata")
+
+taylor <- result[["Taylor Swift"]]$audio_features_df
+taylor$artist <- "Taylor Swift"
+
+sabrina <- result[["Sabrina Carpenter"]]$audio_features_df
+sabrina$artist <- "Sabrina Carpenter"
+
+combined_data = rbind(taylor, sabrina)
+
+ggplot(combined_data, aes(x = artist, y = .data[["valence"]], fill = artist)) +
+        geom_boxplot(color = "#FFFFFF", size = 0.8, outlier.color = "#FF5733", outlier.size = 3) +  # Slightly larger outliers
+        scale_fill_manual(values = c("#00D4FF", "#FF5733", "#00FF85", "#FFC300")) +  # Custom colors for artist fill
+        labs(
+          title = paste(tools::toTitleCase("valence"), "Comparison"),
+          x = "Artist",
+          y = tools::toTitleCase("valence")
+        ) +
+        theme_minimal(base_family = "sans") +
+        theme(
+          plot.background = element_rect(fill = "#1E1E1E", color = NA),  # Dark plot background
+          panel.background = element_rect(fill = "#1E1E1E", color = NA),  # Dark panel background
+          panel.grid.major = element_line(color = "#3A3A3A"),  # Subtle grid lines
+          panel.grid.minor = element_line(color = "#3A3A3A", linetype = "dotted"),
+          axis.text.x = element_text(color = "#FFFFFF", size = 14),  # Larger x-axis labels
+          axis.text.y = element_text(color = "#FFFFFF", size = 14),  # Larger y-axis labels
+          axis.title.x = element_text(color = "#FFFFFF", size = 16),  # Larger x-axis title
+          axis.title.y = element_text(color = "#FFFFFF", size = 16),  # Larger y-axis title
+          plot.title = element_text(color = "#00D4FF", size = 18, face = "bold", hjust = 0.5),  # Larger, centered title
+          legend.position = "none"  # Hides legend to keep it clean
+        )
+```
+
+We can see how audio features have evolved over the years and various decades. We observe that *valence* has decreased over the years, which means songs have got a sadder tone as compared to the '80s, but we can also see that *danceability* has slightly gone up since the '90s.
+
+```{r, warning = FALSE, out.width='75%', fig.align='center'}
+#| echo: false
+load("../Data/clean_tracks.Rdata")
+filtered_data <- tracks[tracks$year >= 1982 & tracks$year <= 2020, ]
+
+p <- ggplot(filtered_data, aes(x = year)) +
+  labs(
+    x = "Year",
+    y = "Audio Features",
+    title = "Audio Features Over Time"
+  ) +
+  theme_minimal(base_family = "sans") +
+  theme(
+    plot.background = element_rect(fill = "#1E1E1E", color = NA),  # Dark plot background
+    panel.background = element_rect(fill = "#1E1E1E", color = NA),  # Dark panel background
+    panel.grid.major = element_line(color = "#3A3A3A"),  # Subtle grid lines
+    panel.grid.minor = element_line(color = "#3A3A3A", linetype = "dotted"),
+    axis.text.x = element_text(color = "#FFFFFF", size = 14),  # Larger x-axis labels
+    axis.text.y = element_text(color = "#FFFFFF", size = 14),  # Larger y-axis labels
+    axis.title.x = element_text(color = "#FFFFFF", size = 16),  # Larger x-axis title
+    axis.title.y = element_text(color = "#FFFFFF", size = 16),  # Larger y-axis title
+    plot.title = element_text(color = "#00D4FF", size = 18, face = "bold", hjust = 0.5),  # Larger, centered title
+    legend.background = element_rect(fill = "#1E1E1E", color = NA),  # Dark legend background
+    legend.text = element_text(color = "#FFFFFF", size = 12),  # White legend text
+    legend.title = element_blank()  # No legend title
+  )
+
+# Adding each feature line with custom colors
+for (feature in c("Danceability", "Valence", "Energy", "Popularity")) {
+  p <- p + geom_line(aes_string(y = feature, color = paste0("'", feature, "'")), linewidth = 1.2)
+}
+
+# Print the plot
+print(p)
+```
+
+\newpage
+
+Now we can answer the question that we raised earlier, i.e., are songs getting shorter? We observe that indeed, there is a sharp decline in the duration of songs as we from the '80s to the late 2010s. We suspect that this might be due to people's reduced attention spans with the advent of platforms like *Instagram Reels* or *YouTube Shorts*.
+
+```{r, warning = FALSE, out.width='75%', fig.align='center'}
+#| echo: false
+load("../Data/clean_tracks.Rdata")
+filtered_data <- tracks[tracks$year >= 1982 & tracks$year <= 2020, ]
+    ggplot(filtered_data, aes(x = year)) +
+      geom_line(aes(y = Duration, color = "Duration"), size = 1.2) +  # Bold line for Duration
+      scale_color_manual(values = c("Duration" = "#00D4FF")) +  # Bright color for the line
+      labs(
+        x = "Year",
+        y = "Duration (in secs)",
+        title = "Duration Over Time"
+      ) +
+      theme_minimal(base_family = "sans") +
+      theme(
+        plot.background = element_rect(fill = "#1E1E1E", color = NA),  # Dark plot background
+        panel.background = element_rect(fill = "#1E1E1E", color = NA),  # Dark panel background
+        panel.grid.major = element_line(color = "#3A3A3A"),  # Subtle grid lines
+        panel.grid.minor = element_line(color = "#3A3A3A", linetype = "dotted"),
+        axis.text.x = element_text(color = "#FFFFFF", size = 14),  # Larger x-axis labels
+        axis.text.y = element_text(color = "#FFFFFF", size = 14),  # Larger y-axis labels
+        axis.title.x = element_text(color = "#FFFFFF", size = 16),  # Larger x-axis title
+        axis.title.y = element_text(color = "#FFFFFF", size = 16),  # Larger y-axis title
+        plot.title = element_text(color = "#00D4FF", size = 18, face = "bold", hjust = 0.5),  # Larger, centered title
+        legend.background = element_rect(fill = "#1E1E1E", color = NA),  # Dark legend background
+        legend.text = element_text(color = "#FFFFFF", size = 12),  # White legend text
+        legend.title = element_blank()  # No legend title
+      )
+```
+
+# [Final Thoughts]{.underline}
+
+This analysis of Spotify offers valuable insights about the kind of music people prefer from their favourite artists and how have music tastes of the common public changed over the years.
+
+-   Most popular tracks of top artists share some common features like high danceability, upbeat tempos etc. which might be the driving factor of the artist's success.
+
+-   By comparing artists we could see how various artists of the same genres can be so different in terms of the audio features of their top hits. Two artists of the same genres can vary in valence, energy, tempo, etc. which tells us about their unique sound.
+
+-   Over the years, we can observe how danceability and energy of songs have seen an increase but features like valence have seen a decline, from which we can understand the kind of songs the new generation likes in comparison to the previous generations.
+
+-   The decreasing trend in duration of songs suggests higher preference for shorter, quick-to-end songs among the current fans, possibly due to the rise of social media platforms which focus more on quick consumption content.
+
+# [References]{.underline}
+
+-   <https://chartmasters.org/most-monthly-listeners-on-spotify/> : Table for artists with most monthly listeners.
+
+-   <https://github.com/charlie86/spotifyr> : Link to the *spotifyr* package, credits to *charlie86* on GitHub.
+
+-   <https://www.kaggle.com/datasets/yamaerenay/spotify-dataset-19212020-600k-tracks> : Link to the Kaggle dataset.
