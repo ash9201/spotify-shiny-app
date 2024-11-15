@@ -1,16 +1,5 @@
 # Shiny App
 
-Make sure to install the following libraries before hand
+Make sure to install the following packages before running the app
 
-install.packages("shinythemes")
-
-install.packages("spotifyr")
-
-### The following packages will also be loaded in the app, so install them if you don't have them on your device
-library(shiny)
-
-library(ggplot2)
-
-library(dplyr)
-
-library(tools)
+install.packages(c("shinythemes", "spotifyr", "tidyverse"))
