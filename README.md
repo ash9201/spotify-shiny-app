@@ -1,4 +1,3 @@
 # Project Repository
 
-This repository will contain **ALL** the code, analysis, document and presentation for your group project.
- 
+This repository contains **ALL** the code, analysis, document and presentation for the spotify project.
